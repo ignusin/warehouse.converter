@@ -33,8 +33,8 @@ public class DefaultCsvWriter implements CsvWriter {
                 String name = (String)row[columnMap[1]];
                 String description = (String)row[columnMap[2]];
                 String unit = (String)row[columnMap[3]];
-                double quantity = (double)row[columnMap[4]];
-                double price = (double)row[columnMap[5]];
+                double quantity = extractDouble(row[columnMap[4]]);
+                double price = extractDouble(row[columnMap[5]]);
                 
                 writer.print(filterStringValue(code));
                 writer.print(";");
@@ -50,6 +50,7 @@ public class DefaultCsvWriter implements CsvWriter {
                 writer.println();
             }
             catch (RuntimeException ex) {
+            	ex.printStackTrace();
             }
         }
 	}
@@ -63,5 +64,17 @@ public class DefaultCsvWriter implements CsvWriter {
 	        .replace(';', ',')
 	        .replace("\r", " ")
 	        .replace("\n", " ");
+    }
+    
+    private static double extractDouble(Object value) {
+        if (value instanceof String) {
+        	return Double.parseDouble(((String)value).replace(',', '.').replace(" ", ""));
+        }
+        else if (value instanceof Double) {
+        	return (double)value;
+        }
+        else {
+        	throw new RuntimeException("Некорректное числовое значение.");
+        }
     }
 }

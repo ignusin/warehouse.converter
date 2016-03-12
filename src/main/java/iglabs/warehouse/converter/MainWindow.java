@@ -23,6 +23,7 @@ public class MainWindow extends JFrame {
 	private static final long serialVersionUID = 1L;
 
 	private final AppContext appContext;
+	private JButton selectFileButton;
 	private FieldSelectionPane fieldSelectionPane;
 	private JButton createCsvButton;
 	private DataTable selectedData = null;
@@ -64,7 +65,7 @@ public class MainWindow extends JFrame {
 	}
 	
 	private void initSelectFileButton(GridBagConstraints c) {
-		JButton selectFileButton = new JButton("Выбрать XLSX-файл");
+		selectFileButton = new JButton("Выбрать XLSX-файл");
 		UI.applyButtonStyle(selectFileButton);
 		
 		selectFileButton.addActionListener(new ActionListener() {
@@ -127,7 +128,7 @@ public class MainWindow extends JFrame {
 	}
 	
 	private void selectFileButtonClick() {
-		JFileChooser fileChooser = new JFileChooser();
+		final JFileChooser fileChooser = new JFileChooser();
 		fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
 		
 		FileFilter[] filters = fileChooser.getChoosableFileFilters();
@@ -140,20 +141,36 @@ public class MainWindow extends JFrame {
 
 		int result = fileChooser.showOpenDialog(this);
 		if (result == JFileChooser.APPROVE_OPTION) {
-			try {
-				selectedData = appContext.getExcelReader()
-						.read(fileChooser.getSelectedFile().getAbsolutePath());
-			}
-			catch (Exception ex) {
-				JOptionPane.showMessageDialog(
-					this,
-					"Не удалось загрузить Excel-файл, причина: " + ex.getMessage()
-				);
-				
-				return;
-			}
+			Thread thread = new Thread(new Runnable() {
+				@Override
+				public void run() {
+					selectFileButton.setText("Ожидайте, загружается файл...");
+					selectFileButton.setEnabled(false);
+					fieldSelectionPane.setEnabled(false);
+					createCsvButton.setEnabled(false);
+					
+					try {
+						selectedData = appContext.getExcelReader()
+								.read(fileChooser.getSelectedFile().getAbsolutePath());
+					}
+					catch (Exception ex) {
+						JOptionPane.showMessageDialog(
+							MainWindow.this,
+							"Не удалось загрузить Excel-файл, причина: " + ex.getMessage()
+						);
+						
+						return;
+					}
+					finally {
+						selectFileButton.setText("Выбрать XLSX-файл");
+						selectFileButton.setEnabled(true);
+					}
+					
+					assignHeaders();
+				}
+			});
 			
-			assignHeaders();
+			thread.start();
 		}
 	}
 	
